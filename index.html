@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Messaging App — Improved UI</title>
+
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#4f46e5;
+      --muted:#94a3b8;
+      --sent:#a7f3d0;
+      --recv:#ffffff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,#071029 0%, #07122a 100%);
+      color:#e6eef8;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .app {
+      width:100%;
+      max-width:980px;
+      height:80vh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:16px;
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      overflow:hidden;
+      display:grid;
+      grid-template-columns: 320px 1fr;
+    }
+
+    /* Left panel (controls / rooms) */
+    .left {
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+      padding:18px;
+      border-right:1px solid rgba(255,255,255,0.03);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .brand {
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .logo {
+      width:46px;height:46px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),#06b6d4);
+      display:flex;align-items:center;justify-content:center;font-weight:700;color:white;
+      box-shadow:0 4px 12px rgba(79,70,229,0.2);
+    }
+    h1{font-size:16px;margin:0}
+    .desc {font-size:12px;color:var(--muted)}
+
+    .roomBox {
+      margin-top:6px;
+      display:flex;
+      gap:8px;
+    }
+    input[type="text"].room {
+      flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);
+      background:transparent;color:inherit;font-size:14px;
+      outline:none;
+    }
+    button.joinBtn {
+      padding:10px 12px;border-radius:10px;border:none;background:var(--accent);color:white;
+      cursor:pointer;font-weight:600;
+      box-shadow:0 6px 16px rgba(79,70,229,0.18);
+    }
+    .status {
+      margin-top:6px;font-size:13px;color:var(--muted);
+    }
+
+    /* Right panel (chat) */
+    .right {
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      padding:18px;
+    }
+    .chatHeader {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .chatTitle {font-weight:700}
+    .roomBadge {
+      font-size:13px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.03);
+      color:var(--muted);
+    }
+
+    .messageDisplay {
+      flex:1;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+      padding:18px;
+      border-radius:12px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    .msg {
+      max-width:70%;
+      padding:10px 12px;
+      border-radius:12px;
+      line-height:1.2;
+      box-shadow: 0 4px 10px rgba(2,6,23,0.5);
+      word-break:break-word;
+    }
+    .meta {
+      display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-top:6px;
+    }
+    .msg.sent {
+      margin-left:auto;
+      background: linear-gradient(180deg, rgba(165,243,209,0.9), rgba(122,211,187,0.9));
+      color:#052017;
+      border-bottom-right-radius:4px;
+    }
+    .msg.received {
+      margin-right:auto;
+      background: rgba(255,255,255,0.95);
+      color:#0b1220;
+      border-bottom-left-radius:4px;
+    }
+
+    .composer {
+      display:flex;
+      gap:8px;
+      align-items:flex-end;
+      padding-top:6px;
+    }
+    textarea#message {
+      flex:1;
+      min-height:48px;
+      max-height:140px;
+      resize:none;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.04);
+      background:transparent;color:inherit;font-size:14px;
+      outline:none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    button#sendBtn {
+      padding:10px 16px;border-radius:12px;border:none;background:var(--accent);color:white;font-weight:700;
+      cursor:pointer;min-width:86px;
+      box-shadow: 0 8px 18px rgba(79,70,229,0.18);
+    }
+    button#sendBtn[disabled] {
+      opacity:0.45; cursor:not-allowed; box-shadow:none;
+    }
+
+    .hint {font-size:12px;color:var(--muted); margin-top:4px}
+    @media(max-width:820px){
+      .app{grid-template-columns:1fr; height:92vh}
+      .left{display:flex;flex-direction:row;align-items:center;gap:10px;padding:12px}
+      .messageDisplay{min-height:40vh}
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app" role="application" aria-label="Messaging App">
+    <div class="left" aria-hidden="false">
+      <div class="brand">
+        <div class="logo">MSG</div>
+        <div>
+          <h1>Messaging APP</h1>
+          <div class="desc">Simple socket.io chat — improved UI</div>
+        </div>
+      </div>
+
+      <div class="roomBox" title="Join room">
+        <input id="roomNumber" class="room" type="text" placeholder="Enter room number (e.g. 1234)" aria-label="Room number">
+        <button id="joinBtn" class="joinBtn" onclick="joinRoom()">Join</button>
+      </div>
+
+      <div class="status" id="status">Not connected. Join a room to start.</div>
+
+      <div style="margin-top:auto;">
+        <div style="font-size:12px;color:var(--muted)">Tips</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px">
+          Press <strong>Enter</strong> to send, <strong>Shift+Enter</strong> for newline.
+        </div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="chatHeader">
+        <div>
+          <div class="chatTitle">Room chat</div>
+          <div class="desc" style="margin-top:4px">Real-time messages (local echo shown)</div>
+        </div>
+        <div>
+          <div id="roomBadge" class="roomBadge">No room</div>
+        </div>
+      </div>
+
+      <div id="messageDisplay" class="messageDisplay" aria-live="polite"></div>
+
+      <div class="composer">
+        <textarea id="message" placeholder="Type your message..." aria-label="Message input"></textarea>
+        <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+      </div>
+      <div class="hint">Messages will appear here. You're not connected until you join a room.</div>
+    </div>
+  </div>
+
+ 
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    // DOM refs
+    const messageBox = document.getElementById('messageDisplay');
+    const messageInput = document.getElementById('message');
+    const roomNumber = document.getElementById('roomNumber');
+    const joinBtn = document.getElementById('joinBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const status = document.getElementById('status');
+    const roomBadge = document.getElementById('roomBadge');
+
+    let roomId = null;
+    function updateSendState(){
+      const hasText = messageInput.value.trim().length > 0;
+      sendBtn.disabled = !hasText || !roomId;
+    }
+    messageInput.addEventListener('input', updateSendState);
+    function sendMessage(){
+      const raw = messageInput.value;
+      const msg = raw.trim();
+      if(!msg || !roomId) return;
+      // emit to socket
+      socket.emit('message', {room: roomId, msg});
+
+      // local echo as "sent"
+      appendMessage({msg, time: Date.now(), sent: true});
+      messageInput.value = '';
+      updateSendState();
+    }
+    // Join room
+    function joinRoom(){
+      const room = roomNumber.value.trim();
+      if(!room) {
+        status.textContent = 'Please enter a room number to join.';
+        return;
+      }
+      roomId = room;
+      socket.emit('join-room', room);
+      status.textContent = 'Joined room ' + room + '. Listening for messages...';
+      roomBadge.textContent = 'Room ' + room;
+      joinBtn.disabled = true;
+      roomNumber.disabled = true;
+      updateSendState();
+      messageInput.focus();
+      // optional: clear message area on join
+      // messageBox.innerHTML = '';
+    }
+
+    // Append message bubble
+    function appendMessage({msg, time = Date.now(), sent = false}){
+      const wrapper = document.createElement('div');
+      const bubble = document.createElement('div');
+      bubble.className = 'msg ' + (sent ? 'sent' : 'received');
+      bubble.textContent = msg;
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const ts = new Date(time);
+      meta.innerHTML = `<span>${sent ? 'You' : 'Peer'}</span><span>•</span><span>${ts.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>`;
+
+      wrapper.appendChild(bubble);
+      wrapper.appendChild(meta);
+
+      messageBox.appendChild(wrapper);
+      messageBox.scrollTo({ top: messageBox.scrollHeight, behavior: 'smooth' });
+    }
+    
+    socket.on('new-message', (data) => {
+      let text = '';
+      if (typeof data === 'string') text = data;
+      else if (data && data.msg) text = data.msg;
+      else text = JSON.stringify(data);
+
+      appendMessage({ msg: text, time: Date.now(), sent: false });
+    });
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    roomNumber.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        joinRoom();
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+    socket.on('disconnect', () => {
+      status.textContent = 'Disconnected from server';
+    });
+    socket.on('connect', () => {
+      if (!roomId) status.textContent = 'Connected to server. Join a room to start.';
+    });
+    updateSendState();
+  </script>
+</body>
+</html>
